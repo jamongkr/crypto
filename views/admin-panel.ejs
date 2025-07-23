@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>어드민 패널</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 2rem; background-color: #f1f5f9; }
+    .btn-lg { font-size: 1.2rem; border-radius: 1rem; }
+  </style>
+</head>
+<body>
+  <div class="container text-center">
+    <h2 class="mb-4">🔧 키 리젠 패널</h2>
+    <button class="btn btn-danger btn-lg" onclick="regen()">메인/공개 키 리젠하기</button>
+    <p class="text-muted mt-3">regen하면 로그에 기록됩니다</p>
+  </div>
+
+  <script>
+    function regen() {
+      fetch('/regen-keys', { method: 'POST' })
+      .then(res => res.json())
+      .then(() => alert('키가 새로 생성되었습니다!'));
+    }
+  </script>
+</body>
+</html>

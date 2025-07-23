@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>복호화</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 3rem;
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 600px;
+    }
+    h2 {
+      font-size: 2.5rem;
+      margin-bottom: 2rem !important;
+    }
+    .card {
+      border: none;
+      border-radius: 1.5rem;
+      box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+      padding: 2.5rem;
+    }
+    .form-control {
+      font-size: 1.2rem;
+      padding: 0.8rem 1rem;
+      min-height: 55px;
+    }
+    textarea.form-control {
+      min-height: 150px;
+      resize: vertical; /* 사용자가 크기 조절 가능하도록 */
+      cursor: pointer; /* 복사 가능함을 시각적으로 알려줌 */
+    }
+    .form-label {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+    .btn-success {
+      border-radius: 1rem;
+      font-size: 1.3rem;
+      padding: 0.8rem 1.5rem;
+      height: 60px;
+    }
+    .mt-4 {
+      margin-top: 2rem !important;
+    }
+    /* 복사 메시지 관련 스타일 */
+    .copy-message {
+      font-size: 0.9rem;
+      color: green;
+      margin-left: 10px;
+      visibility: hidden; /* 초기에는 숨김 */
+      opacity: 0;
+      transition: visibility 0s, opacity 0.5s linear;
+    }
+    .copy-message.show {
+      visibility: visible;
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="text-center">🔓<br>텍스트 복호화</h2>
+    <div class="card">
+      <textarea class="form-control mb-3" id="text" rows="4" placeholder="암호화된 텍스트를 붙여넣으세요."></textarea>
+      <div class="mb-3">
+        <label for="publicKey" class="form-label">암호화에 사용된 공개키 값</label>
+        <input type="text" class="form-control" id="publicKey" placeholder="예: 299c8eacce81cc0e717515927e98cdede1fa91a2b3bc145327499ddb2e676619">
+      </div>
+      <button class="btn btn-success w-100" onclick="decrypt()">복호화</button>
+      <div class="mt-4 output-group">
+        <!-- ▼ 변경된 부분 시작 ▼ -->
+        <label class="form-label">🔍 결과 <span id="copyFeedback" class="copy-message">복사 완료!</span></label>
+        <textarea class="form-control" id="output" rows="3" readonly onclick="copyOutput('output')"></textarea>
+        <!-- ▲ 변경된 부분 끝 ▲ -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function decrypt() {
+      fetch('/decrypt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: document.getElementById('text').value,
+          publicKey: document.getElementById('publicKey').value
+        })
+      })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => { throw new Error(err.error || '알 수 없는 복호화 실패'); });
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data.decrypted) {
+          document.getElementById('output').value = data.decrypted;
+        } else {
+          alert('복호화 실패: 서버 응답에 복호화된 데이터가 없습니다.');
+        }
+      })
+      .catch(error => {
+        alert('복호화 실패! ' + error.message);
+        console.error('복호화 에러:', error);
+      });
+    }
+
+    // 결과값 복사 함수 (encrypt.ejs와 동일)
+    function copyOutput(elementId) {
+      const outputTextarea = document.getElementById(elementId);
+      if (outputTextarea.value.trim() === '') {
+        // 복사할 내용이 없으면 아무것도 하지 않습니다.
+        return;
+      }
+
+      // textarea 내용을 클립보드에 복사
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(outputTextarea.value)
+          .then(() => {
+            const feedbackElement = document.getElementById('copyFeedback');
+            feedbackElement.classList.add('show');
+            setTimeout(() => {
+              feedbackElement.classList.remove('show');
+            }, 1500); // 1.5초 후 메시지 사라짐
+          })
+          .catch(err => {
+            console.error('클립보드 복사 실패:', err);
+            alert('클립보드 복사 실패! (HTTPS 환경이 아니거나 권한이 없을 수 있습니다.)');
+          });
+      } else {
+        // 구형 브라우저 또는 비보안 컨텍스트의 대체 처리 (선택)
+        // 직접 선택하여 복사하도록 안내
+        outputTextarea.select(); // 텍스트 선택
+        try {
+          document.execCommand('copy'); // 복사 시도
+          alert('내용이 복사되었습니다. (브라우저 정책으로 직접 클릭해야 합니다.)');
+        } catch (err) {
+          alert('클립보드 복사를 지원하지 않는 브라우저입니다. 직접 텍스트를 선택하여 복사해주세요.');
+        }
+        console.error('navigator.clipboard API is not available or not supported.');
+      }
+    }
+  </script>
+</body>
+</html>
